@@ -1,0 +1,85 @@
+# Analysis of discharge current and voltage from data collection 10142019
+# Average current vs shot number over the 50 to 150 microsecond time window.  Average voltage vs shot number would be easy to graph as well, following same procedure.
+
+import matplotlib.pylab as plt
+from load_hdf5 import load_hdf5
+import numpy as np
+import statistics
+from scipy.signal import savgol_filter
+plt.rcParams.update({'errorbar.capsize':4})
+
+# Load the HDF5 file (directory and filepath need to be edited by user for their file location):
+data_directory_location = 'C:\\Users\\Josh0\\Documents\\1. Josh Documents\\Graduate School - Bryn Mawr College\\Plasma Lab (BMX) Research\\Analysis\\Processed Data Files\\'
+datafilename = '2kV_0p5ms_10msGas_20shots_DisHV_10142019.h5'
+data = load_hdf5(data_directory_location + datafilename, verbose = True)
+
+# The structure of this HDF5 file is as follows:
+"""data:
+    discharge:
+        dis_I
+        dis_I_raw
+        dis_V
+        dis_V_raw
+        
+    time:
+        time_s
+        time_us
+"""
+
+# Calling time from the dataset:
+time_us = data['time']['time_us'][:]
+time_s = data['time']['time_s'][:]
+
+# Calling the discharge current and discharge voltages:
+dis_current = data['discharge']['dis_I'][:]
+dis_current = dis_current*1e-3
+raw_dis_current = data['discharge']['dis_I_raw'][:]
+dis_voltage = data['discharge']['dis_V'][:]
+raw_dis_voltage = data['discharge']['dis_V_raw'][:]
+
+# ***Below will include data excluding shot 4 (failed collection)***
+
+avg_current = np.zeros(25004)
+for s in range(0, 21):
+    if s == 3:
+        continue
+    avg_current = avg_current + np.array(dis_current[s,:]/20)
+    mean_current = np.mean(dis_current[s,:])
+    
+# ***** the two lines below are key for manipulating 2D arrays in the future!
+# Gets rid of the whole dataset for shot 4 and confines to 50-150us
+dis_current_excl4 = np.delete(dis_current, 3, axis=0)
+dis_current_50_150 = dis_current_excl4[:, 6250:18750]
+
+# Creates an array of the mean values for each data set, over the specified time range
+mean_values = np.zeros(20)
+for i in range(0, 20):
+    mean_values[i] = np.mean(dis_current_50_150[i])
+    
+# Creates an array of standard deviation of values within each mean calculation:
+stdev_shots = np.zeros(20)
+for i in range(0, 20):
+    stdev_shots[i] = np.array(statistics.stdev(dis_current_50_150[i]))
+    
+error = stdev_shots
+x = np.arange(1, 21)
+
+# Code for the plot using 'subplot' method:
+fig, ax = plt.subplots()
+ax.scatter(x, mean_values, s=75, color='blue')
+ax.errorbar(x, mean_values, xerr=0, yerr=error, ecolor='black', ls='None')
+ax.set_xticks(x)
+ax.set_xlabel('Shot Number', fontsize=20)
+ax.set_xlim(0, 21)
+ax.grid(True, alpha=0.5)
+ax.set_ylabel('Mean Discharge Current (kA)', fontsize=20)
+ax.tick_params(axis='x', labelsize=20, width=1)
+ax.tick_params(axis='y', labelsize=20, width=1)
+ax.set_ylim(20, 65)
+for axis in ['top','bottom','left','right']:
+    ax.spines[axis.set_linewidth(1.5)
+    
+
+
+
+
